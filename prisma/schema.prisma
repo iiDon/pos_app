@@ -1,0 +1,248 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+
+  url = env("DATABASE_URL")
+}
+
+// Necessary for Next auth
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? // @db.Text
+  access_token      String? // @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? // @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String    @id @default(cuid())
+  sessionToken String    @unique
+  userId       String
+  expires      DateTime
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  RAccount     RAccount? @relation(fields: [rAccountId], references: [id])
+  rAccountId   String?
+}
+
+model User {
+  id            String        @id @default(cuid())
+  name          String?
+  email         String?       @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  branch        Branch[]
+  invoice       Invoice[]
+  SaleSession   SaleSession[]
+  Recipts       Recipts[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Resturant {
+  id         String     @id @default(cuid())
+  name       String
+  Branch     Branch[]
+  created_at DateTime   @default(now())
+  updated_at DateTime   @updatedAt
+  Customer   Customer[]
+  Supplier   Supplier[]
+}
+
+model Branch {
+  id          String        @id @default(cuid())
+  name        String
+  created_at  DateTime      @default(now())
+  updated_at  DateTime      @updatedAt
+  user        User[]
+  Product     Product[]
+  // Sale        Sale[]
+  // Purchase    Purchase[]
+  Invoice     Invoice[]
+  RAccount    RAccount[]
+  SaleSession SaleSession[]
+  resturant   Resturant     @relation(fields: [resturantId], references: [id], onDelete: Cascade)
+  resturantId String
+  Recipts     Recipts[]
+}
+
+model Product {
+  id         String    @id @default(cuid())
+  name       String
+  price      Float
+  quantity   Int
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  branchId   String
+  branch     Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  purchaseId String?
+  Tax        Tax?      @relation(fields: [taxId], references: [id])
+  taxId      String?
+  Category   Category? @relation(fields: [categoryId], references: [id])
+  categoryId String?
+  invoice    Invoice   @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  invoiceId  String
+}
+
+model Category {
+  id         String    @id @default(cuid())
+  name       String
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  Product    Product[]
+}
+
+model Invoice {
+  id            String       @id @default(cuid())
+  number        Int
+  type          InvoiceType
+  created_at    DateTime     @default(now())
+  updated_at    DateTime     @updatedAt
+  branchId      String
+  branch        Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  products      Product[]
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  Customer      Customer?    @relation(fields: [customerId], references: [id])
+  customerId    String?
+  Supplier      Supplier?    @relation(fields: [supplierId], references: [id])
+  supplierId    String?
+  SaleSession   SaleSession? @relation(fields: [saleSessionId], references: [id])
+  saleSessionId String?
+}
+
+enum InvoiceType {
+  Sale
+  Purchase
+}
+
+// model Sale {
+//   id            String       @id @default(cuid())
+//   created_at    DateTime     @default(now())
+//   updated_at    DateTime     @updatedAt
+//   branchId      String
+//   branch        Branch       @relation(fields: [branchId], references: [id], onDelete: Cascade)
+//   products      Product[]
+//   user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+//   userId        String
+//   Customer      Customer?    @relation(fields: [customerId], references: [id])
+//   customerId    String?
+//   SaleSession   SaleSession? @relation(fields: [saleSessionId], references: [id])
+//   saleSessionId String?
+// }
+
+// model Purchase {
+//   id         String    @id @default(cuid())
+//   number     Int
+//   created_at DateTime  @default(now())
+//   updated_at DateTime  @updatedAt
+//   branchId   String
+//   branch     Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+//   products   Product[]
+//   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+//   userId     String
+//   Supplier   Supplier? @relation(fields: [supplierId], references: [id])
+//   supplierId String?
+// }
+
+model Tax {
+  id         String    @id @default(cuid())
+  name       String
+  tax        Float
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  product    Product[]
+}
+
+model Customer {
+  id          String    @id @default(cuid())
+  name        String?
+  phone       String?
+  Invoice     Invoice[]
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+  resturant   Resturant @relation(fields: [resturantId], references: [id], onDelete: Cascade)
+  resturantId String
+}
+
+model Supplier {
+  id          String    @id @default(cuid())
+  name        String
+  phone       String
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+  Invoice     Invoice[]
+  resturant   Resturant @relation(fields: [resturantId], references: [id], onDelete: Cascade)
+  resturantId String
+}
+
+model SaleSession {
+  id         String    @id @default(cuid())
+  name       String    @default("Sale")
+  cashBox    Float
+  Invoice    Invoice[]
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  RAccount   RAccount  @relation(fields: [RAccountId], references: [id], onDelete: Cascade)
+  RAccountId String
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  branch     Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  branchId   String
+}
+
+model RAccount {
+  id         String    @id @default(cuid())
+  name       String
+  type       String
+  branchId   String
+  branch     Branch    @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  session    Session[]
+
+  Recipts     Recipts[]
+  SaleSession SaleSession[]
+}
+
+model Recipts {
+  id          String      @id @default(cuid())
+  name        String
+  description String
+  // type        String
+  type        ReciptsType
+  from_to     String
+  RAccount    RAccount    @relation(fields: [RAccountId], references: [id], onDelete: Cascade)
+  RAccountId  String
+  branch      Branch      @relation(fields: [branchId], references: [id], onDelete: Cascade)
+  branchId    String
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  created_at  DateTime    @default(now())
+  updated_at  DateTime    @updatedAt
+}
+
+enum ReciptsType {
+  INCOME
+  EXPENSE
+}
