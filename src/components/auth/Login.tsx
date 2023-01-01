@@ -1,6 +1,5 @@
-import { type NextPage } from "next";
 import Link from "next/link";
-import { signIn, signOut, useSession } from "next-auth/react";
+import { signIn } from "next-auth/react";
 import {
     Flex,
     Box,
@@ -14,13 +13,40 @@ import {
     useColorModeValue,
     Text,
 } from '@chakra-ui/react';
-import type { Dispatch, SetStateAction } from "react";
+import { Dispatch, SetStateAction, useRef, useState } from "react";
+import { useRouter } from "next/router";
+import useProtectedRoute from "../../../hooks/protectRoutes";
 
 interface Props {
     setIsForgotPassword: Dispatch<SetStateAction<boolean>>
 }
 
 const Login = ({ setIsForgotPassword }: Props) => {
+    useProtectedRoute()
+    const email = useRef<HTMLInputElement>(null);
+    const password = useRef<HTMLInputElement>(null);
+    const [error, setError] = useState<string | undefined>(undefined);
+    const router = useRouter();
+    const SignInHandler = () => {
+        signIn('credentials', {
+            redirect: false,
+            email: email.current?.value,
+            password: password.current?.value,
+        }).then((res) => {
+            if (res) {
+                setError(res.error);
+            } else {
+                router.push('/dashboard');
+            }
+        })
+    }
+
+
+
+
+
+
+
 
     return (
 
@@ -43,11 +69,11 @@ const Login = ({ setIsForgotPassword }: Props) => {
                     <Stack spacing={4}>
                         <FormControl id="email">
                             <FormLabel>الإيميل</FormLabel>
-                            <Input type="email" textAlign='left' />
+                            <Input type="email" textAlign='left' ref={email} />
                         </FormControl>
                         <FormControl id="password">
                             <FormLabel>كلمة المرور</FormLabel>
-                            <Input type="password" textAlign='left' />
+                            <Input type="password" textAlign='left' ref={password} />
                         </FormControl>
                         <Stack spacing={10}>
                             <Stack
@@ -59,7 +85,12 @@ const Login = ({ setIsForgotPassword }: Props) => {
                                     <Link href={""}>نسيت كلمة المرور؟</Link>
                                 </Text>
                             </Stack>
+                            {
+                                error && <Text bg='red.200' color={'red.700'} p={2} rounded="md">{error}</Text>
+                            }
+
                             <Button
+                                onClick={SignInHandler}
                                 bg={'blue.400'}
                                 color={'white'}
                                 _hover={{
